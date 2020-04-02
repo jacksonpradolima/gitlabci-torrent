@@ -17,7 +17,7 @@ class DataExtraction(object):
             df_min = pd.read_csv(f'{self.log_dir}{os.sep}data-filtering.csv', sep=';')
 
             # Merge with Travis CI Information
-            self.df_main = pd.merge(df_repo, df_min, on=['job_id', 'job_id'], how='inner')
+            self.df_main = pd.merge(df_min, df_repo, on=['job_id', 'job_id'], how='left')
 
         return self.df_main
 
@@ -35,6 +35,7 @@ class DataExtraction(object):
 
             self.df_parsed.last_run = pd.to_datetime(self.df_parsed.last_run)
             self.df_parsed.sort_values(by=['last_run'], inplace=True)
+            self.df_parsed = self.df_parsed.reset_index(drop=True)
 
             # Convert the test case names and commit's sha to a ID
             self.df_parsed['test_name'] = pd.factorize(self.df_parsed['test_name'])[0] + 1
@@ -43,6 +44,8 @@ class DataExtraction(object):
         return self.df_parsed
 
     def feature_engineering(self, df):
+        # df.loc[:, 'BuildId'] = df['sha']
+
         tc_fieldnames = ['Id', 'Name', 'BuildId', 'Duration',
                          'CalcPrio', 'LastRun', 'Verdict', 'Cycle', 'LastResults']
         tcdf = pd.DataFrame(columns=tc_fieldnames)
@@ -52,7 +55,7 @@ class DataExtraction(object):
         # Name | Unique numeric identifier of the test case
         tcdf['Name'] = df['test_name']
         # BuildId | Value uniquely identifying the build.
-        #tcdf['Sha'] = df['sha']  # Preserving "original" sha factorized
+        # tcdf['Sha'] = df['sha']  # Preserving "original" sha factorized
         tcdf['BuildId'] = pd.factorize(df['sha'])[0] + 1  # Generate new factorization
         # Duration | Approximated runtime of the test case
         tcdf['Duration'] = df['duration']
@@ -87,6 +90,12 @@ class DataExtraction(object):
         Path(path).mkdir(parents=True, exist_ok=True)
 
         df = self.get_data_parsed()
+
+        df2 = self.feature_engineering(df.copy())
+        df2['Variant'] = df['job_name']
+        df2.to_csv(f'{path}{os.sep}data-variants.csv', sep=';', na_rep='[]',
+                   header=True, index=False,
+                   quoting=csv.QUOTE_NONE)
 
         df_total = df.groupby(['sha', 'pipeline_id_y', 'test_name'], as_index=False).max()
         df_total = df_total.reset_index(drop=True)

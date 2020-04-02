@@ -5,7 +5,7 @@ from gitlabci_torrent.analyzer import Analyzer
 
 
 class RunningAnalyzer(unittest.TestCase):
-    @unittest.skip
+
     def test_harvester(self):
         a = Analyzer(f'logs{os.sep}libssh@libssh-mirror')
 
@@ -13,6 +13,7 @@ class RunningAnalyzer(unittest.TestCase):
 
         self.assertTrue(True)
 
+    @unittest.skip
     def test_harvester_split(self):
         a = Analyzer(f'logs{os.sep}libssh@libssh-mirror')
 

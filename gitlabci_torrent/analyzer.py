@@ -28,6 +28,7 @@ class Analyzer(object):
 
         # The test cases found
         tests = []
+        total_duration = 0
 
         num_tc = self.get_number_test_cases(path)
 
@@ -68,6 +69,7 @@ class Analyzer(object):
                         current_test = info[0]  # test case name
                         status = 0 if status == 'Passed' else 1
                         duration = float(info[-2])
+                        total_duration += duration
 
                         # minutes * 60 + sec
                         if info[-1] != 'sec':
@@ -78,6 +80,9 @@ class Analyzer(object):
                 # If I started the line which contains the tests information
                 if 'Test project' in line:
                     valid_info = True
+
+        if total_duration == 0.0:
+            tests = []
 
         return tests
 
