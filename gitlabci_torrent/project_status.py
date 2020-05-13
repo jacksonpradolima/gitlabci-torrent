@@ -37,6 +37,8 @@ class ProjectStatus(object):
         # Sort by commits arrival and start
         df = df.sort_values(by=['last_run'])
 
+        df['test_name'] = pd.factorize(df['test_name'])[0] + 1
+
         # Convert to minutes only valid build duration
         duration = [x / 60 for x in df.duration.tolist()]
 
@@ -52,8 +54,6 @@ class ProjectStatus(object):
         mindate = df['last_run'].min().strftime("%Y/%m/%d")
         maxdate = df['last_run'].max().strftime("%Y/%m/%d")
 
-        builds = df['sha'].max()
-
         faults = df.query('verdict > 0').groupby(['sha'], as_index=False).agg({'verdict': np.sum})
 
         # Number of builds in which at least one test failed
@@ -65,7 +65,7 @@ class ProjectStatus(object):
         # number of unique tests identified from build logs
         test_max = df['test_name'].nunique()
 
-        tests = df.groupby(['sha'], as_index=False).agg({'test_name': 'count'})
+        tests = df.groupby(['sha', 'job_id'], as_index=False).agg({'test_name': 'count'})
 
         # range of tests executed during builds
         test_suite_min = tests['test_name'].min()
