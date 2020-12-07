@@ -29,7 +29,7 @@ class RunningAnalyzer(unittest.TestCase):
 
         self.assertTrue(True)
 
-    @unittest.skip
+    #@unittest.skip
     def test_variants(self):
         de = DataExtraction(f'logs{os.sep}libssh@libssh-mirror')
         variants = de.get_variants()
@@ -124,6 +124,7 @@ class RunningAnalyzer(unittest.TestCase):
 
         self.assertTrue(True)
 
+    @unittest.skip
     def test_plot_variant(self):
         path = f'logs{os.sep}libssh@libssh-mirror{os.sep}libssh@visualstudio-x86'
         a = ProjectStatus(path)
