@@ -5,7 +5,7 @@ from gitlabci_torrent.harvester import Haverster
 
 class RunningHarvester(unittest.TestCase):
     def test_harvester(self):
-        h = Haverster(6055600, 'logs', '2019-01-04')
+        h = Haverster(6055600, 'logs', '2019/01/04')
 
         # h.analise_project()
 

@@ -1,23 +1,27 @@
 import json
 import os
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
-
+import gitlab
 import pandas as pd
 
 from gitlabci_torrent.utils.gitlab_utils import auth_gl
 
 
 class Haverster(object):
-    def __init__(self, project_id, save_dir, threshold):
+
+    def __init__(self, configkey, project_id, save_dir, threshold=None):
         self.project_id = project_id
         self.save_dir = save_dir
 
-        threshold = threshold.split("-")
-        self.threshold = date(year=int(threshold[0]), month=int(threshold[1]), day=int(threshold[2]))
+        self.threshold = None
+        if threshold is not None:
+            threshold = threshold.split("/")
+            self.threshold = date(year=int(threshold[0]), month=int(threshold[1]), day=int(
+                threshold[2]))
 
         # GitLab authentication
-        self.gl = auth_gl()
+        self.gl = auth_gl(configkey)
 
         # Get the project and its jobs
         self.project = self.gl.projects.get(self.project_id)
@@ -37,10 +41,23 @@ class Haverster(object):
     def get_project_name(self):
         return self.project.attributes['name']
 
+    def _to_date(self, dd):
+        """
+        This function converts a string with date in format YYYY-MM-ddThh:mm:ssZ to date object
+        :param dd: date in str
+        :return: date in date object
+        """
+        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+        return datetime.strptime(dd, date_format).date()
+
     def get_jobs(self):
-        # TODO: Apply threshold
         if self.jobs is None:
             self.jobs = self.project.jobs.list(all=True)
+
+            if self.threshold is not None:
+                self.jobs = [job for job in self.get_jobs() if self._to_date(
+                    job.attributes['created_at']) >= self.threshold]
         return self.jobs
 
     def get_jobs_attributes(self):
@@ -50,9 +67,12 @@ class Haverster(object):
 
     def jobs_information_csv(self, jobs_attributes, save_dir):
         # Prepare the dataset
-        df = pd.io.json.json_normalize(jobs_attributes)
-        df.columns = df.columns.map(lambda x: x.split(".")[-1])
+        df = pd.json_normalize(jobs_attributes)
+        # print(df.columns)
 
+        """
+        
+        df.columns = df.columns.map(lambda x: x.split(".")[-1])
         # Rename columns (multiple 'id' columns)
         df.columns = ['job_allow_failure', 'artifacts', 'artifacts_expire_at', 'author_email',
                       'author_name', 'authored_date', 'committed_date', 'committer_email',
@@ -69,12 +89,24 @@ class Haverster(object):
                       'user_created_at', 'user_id', 'user_job_title', 'user_linkedin', 'user_location', 'user_name',
                       'user_organization', 'user_public_email', 'user_skype', 'user_state', 'user_twitter', 'username',
                       'user_web_url', 'user_website_url', 'job_web_url']
-
+        
         # Now we know the desired columns
         df = df[['job_id', 'job_name', 'job_status', 'job_stage', 'job_ref', 'job_tag', 'job_allow_failure',
                  'job_created_at', 'job_started_at', 'job_finished_at', 'job_coverage', 'job_duration',
                  'commit_id', 'commit_title', 'commit_message',
                  'pipeline_id', 'pipeline_status']]
+        """
+
+        df.columns = df.columns.map(lambda x: x.replace('.', '_'))
+        df = df[['id', 'name', 'status', 'stage', 'ref', 'tag', 'allow_failure',
+                 'created_at', 'started_at', 'finished_at', 'coverage', 'duration',
+                 'commit_id', 'commit_title', 'commit_message',
+                 'pipeline_id', 'pipeline_status']]
+
+        df.columns = ['job_id', 'job_name', 'job_status', 'job_stage', 'job_ref', 'job_tag', 'job_allow_failure',
+                      'job_created_at', 'job_started_at', 'job_finished_at', 'job_coverage', 'job_duration',
+                      'commit_id', 'commit_title', 'commit_message',
+                      'pipeline_id', 'pipeline_status']
 
         df['job_created_at'] = pd.to_datetime(df['job_created_at'])
         df['job_started_at'] = pd.to_datetime(df['job_started_at'])
@@ -92,7 +124,8 @@ class Haverster(object):
             json.dump(self.get_jobs_attributes(), f, indent=4)
 
         # Save a summary in csv
-        self.jobs_information_csv(self.get_jobs_attributes(), self.get_save_dir())
+        self.jobs_information_csv(
+            self.get_jobs_attributes(), self.get_save_dir())
 
     def download_logs(self):
         jobs_attributes = self.get_jobs_attributes()

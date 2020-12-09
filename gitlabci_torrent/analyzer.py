@@ -5,6 +5,7 @@ import pandas as pd
 
 
 class Analyzer(object):
+
     def __init__(self, log_dir):
         self.log_dir = log_dir
         self.project = log_dir.split(os.sep)[-1]
@@ -55,14 +56,15 @@ class Analyzer(object):
                         info = [x.strip() for x in temp_line]
                         info = info[-1].split(" ")
 
-                        if 'Failed' in line or 'Timeout' in line or 'Not Run' in line or 'Exception' in line:
-                            # When the test case status is Failed or Timeout it is in other position
+                        if 'Failed' in line or 'Timeout' in line or 'Not Run' in line or 'Exception' in line or 'Skipped' in line:
+                            # When the test case status is Failed or Timeout it
+                            # is in other position
                             status = info[1].split('***')[-1]
                         else:
                             status = info[4]
 
                         # Not = Not Run
-                        if status not in ['Passed', 'Failed', 'Timeout', 'Not', 'Exception']:
+                        if status not in ['Passed', 'Failed', 'Timeout', 'Not', 'Exception', 'Skipped']:
                             raise Exception("Unknow test case status")
 
                         # Get the available information
@@ -102,13 +104,15 @@ class Analyzer(object):
             job_id = int(job_id)
 
             # Get information about the job
-            info = df[(df.job_id == job_id) & (df.commit_id == sha) & (df.pipeline_id == pipeline_id)].iloc[0]
+            info = df[(df.job_id == job_id) & (df.commit_id == sha)
+                      & (df.pipeline_id == pipeline_id)].iloc[0]
 
             tests = self.get_tests(file)
 
             if len(tests) > 0:
                 # Collect the tests for a log
-                df_tests_temp = pd.DataFrame(tests, columns=['test_name', 'verdict', 'duration'])
+                df_tests_temp = pd.DataFrame(
+                    tests, columns=['test_name', 'verdict', 'duration'])
 
                 df_tests_temp['job_id'] = job_id
                 df_tests_temp['sha'] = sha
