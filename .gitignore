@@ -192,3 +192,8 @@ results/
 .idea/inspectionProfiles/
 
 data/
+
+gitlabci_torrent/test/logs/
+logs/
+logs_test/
+notebook/
