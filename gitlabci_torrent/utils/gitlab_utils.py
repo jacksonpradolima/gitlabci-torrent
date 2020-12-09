@@ -4,7 +4,7 @@ import logging
 import os
 
 config = configparser.ConfigParser()
-config.read(f"..{os.sep}..{os.sep}configuration.properties")
+config.read(f"configuration.properties")
 
 
 def auth_gl(configkey):
