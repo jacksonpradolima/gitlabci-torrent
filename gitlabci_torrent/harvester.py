@@ -133,10 +133,14 @@ class Haverster(object):
 
         for trace, attribute in zip(jobs_trace, jobs_attributes):
             job_id = attribute['id']
-            sha = attribute['commit']['id']
-            pipeline_id = attribute['pipeline']['id']
+                                    
+            if attribute['commit']['id'] is not None and attribute['pipeline']['id'] is not None:                
+                sha = attribute['commit']['id']
+                pipeline_id = attribute['pipeline']['id']
 
-            # Save each log file in the project folder
-            # The file name is to split by pipeline_commit_job
-            with open(f"{self.get_save_dir()}{os.sep}{pipeline_id}_{sha}_{job_id}.log", 'w', encoding='utf-8') as f:
-                f.write(trace.decode("utf-8"))
+                # Save each log file in the project folder
+                # The file name is to split by pipeline_commit_job
+                with open(f"{self.get_save_dir()}{os.sep}{pipeline_id}_{sha}_{job_id}.log", 'w', encoding='utf-8') as f:
+                    f.write(trace.decode("utf-8"))
+            else:
+                print("Skipping Job ID", job_id, " - Invalid meta information.")
