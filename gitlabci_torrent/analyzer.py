@@ -32,7 +32,7 @@ class Analyzer(object):
         total_duration = 0
 
         num_tc = self.get_number_test_cases(path)
-
+        
         if num_tc > 0:
             tc_count = 1
             # For each line in the log
@@ -55,6 +55,8 @@ class Analyzer(object):
 
                         info = [x.strip() for x in temp_line]
                         info = info[-1].split(" ")
+                        
+                        print(line)
 
                         if 'Failed' in line or 'Timeout' in line or 'Not Run' in line or 'Exception' in line or 'Skipped' in line:
                             # When the test case status is Failed or Timeout it
@@ -107,7 +109,11 @@ class Analyzer(object):
             info = df[(df.job_id == job_id) & (df.commit_id == sha)
                       & (df.pipeline_id == pipeline_id)].iloc[0]
 
-            tests = self.get_tests(file)
+            try:
+                tests = self.get_tests(file)
+            except Exception as e:
+                raise Exception(f"Error in Pipeline: {pipeline_id}, SHA: {sha}, Job: {job_id}. {str(e)}. \n\nMetainformation:\n {info}")
+                
 
             if len(tests) > 0:
                 # Collect the tests for a log

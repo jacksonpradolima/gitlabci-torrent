@@ -134,7 +134,9 @@ class Haverster(object):
         for trace, attribute in zip(jobs_trace, jobs_attributes):
             job_id = attribute['id']
                                     
-            if attribute['commit']['id'] is not None and attribute['pipeline']['id'] is not None:                
+            if attribute['commit'] is None or attribute['pipeline'] is None or attribute['commit']['id'] is None or attribute['pipeline']['id'] is None:
+                print("Skipping Job ID", job_id, " - Invalid meta information.")                                
+            else:
                 sha = attribute['commit']['id']
                 pipeline_id = attribute['pipeline']['id']
 
@@ -142,5 +144,4 @@ class Haverster(object):
                 # The file name is to split by pipeline_commit_job
                 with open(f"{self.get_save_dir()}{os.sep}{pipeline_id}_{sha}_{job_id}.log", 'w', encoding='utf-8') as f:
                     f.write(trace.decode("utf-8"))
-            else:
-                print("Skipping Job ID", job_id, " - Invalid meta information.")
+                
