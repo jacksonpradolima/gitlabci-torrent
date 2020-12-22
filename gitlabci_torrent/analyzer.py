@@ -73,6 +73,9 @@ class Analyzer(object):
                                             # The line also contains some path (garbage)
                                             # We ignore the first part (f'{tc_count}/{num_tc}' )
                                             temp_line = line.split(unable_find)[0].strip()
+                                            
+                                            #if not temp_line.endswith('sec'):
+                                            #    temp_line += ' '
                                         else:
                                             line = line.replace(unable_find, '')
                                             s_line = line.strip().split(":")
@@ -91,7 +94,7 @@ class Analyzer(object):
 
 
                                         if ":" in temp_line:
-                                            temp_line += next_line.strip()
+                                            temp_line += ' ' + next_line.strip()
                                         else:
                                             temp_line += ": " + next_line.strip()
                                         line = temp_line
