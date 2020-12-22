@@ -61,8 +61,8 @@ class Analyzer(object):
                                     # Get the right part from the next line
                                     next_line = next(ilog)
                                     temp_line += ": " + next_line.strip()
-                                else:
-                                    temp_line = line.strip().split(":")
+
+                                temp_line = line.strip().split(":")
 
                                 if len(temp_line) > 2:
                                     # For instance, when we have Exception status
