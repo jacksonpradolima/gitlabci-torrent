@@ -27,6 +27,13 @@ class Analyzer(object):
 
         return int(line[0].split('tests failed out of')[-1])
 
+    def _get_status_from_info(self, info):
+        for i in info:
+            if '***' in i:
+                return i.split('***')[-1]
+
+        return ""
+
     def get_tests(self, path):
         # To know when I started get the tests information
         valid_info = False
@@ -58,6 +65,9 @@ class Analyzer(object):
 
                                     tc_count += 1
                                     if unable_find in line:
+                                        # Get the right part from the next line
+                                        next_line = next(ilog)
+
                                         # 'Unable find' was put in the line wrongly
                                         if len(line.split('/')) > 2:
                                             # The line also contains some path (garbage)
@@ -65,12 +75,21 @@ class Analyzer(object):
                                             temp_line = line.split(unable_find)[0].strip()
                                         else:
                                             line = line.replace(unable_find, '')
+                                            s_line = line.strip().split(":")
 
                                             # Remove the wrong part
-                                            temp_line = ''.join(line.strip().split(":")[:-1])
+                                            temp_line = ''.join(s_line[:-1])
 
-                                        # Get the right part from the next line
-                                        next_line = next(ilog)
+                                            # Sometime the test case name is in the same line, and only the test result in the next line
+                                            l = ''.join(s_line[-1])
+                                            possible_tc_names = list(filter(None, l.replace('.', ' ').split(' ')))
+
+                                            if len(possible_tc_names) > 0:
+                                                pos_tc_name = list(possible_tc_names)[0]
+                                                if len(pos_tc_name) > 1 and pos_tc_name not in next_line:
+                                                    temp_line += ': ' + pos_tc_name
+
+
                                         if ":" in temp_line:
                                             temp_line += next_line.strip()
                                         else:
@@ -91,7 +110,7 @@ class Analyzer(object):
                                         # When the test case status is Failed or Timeout it
                                         # is in other position (1)
                                         # When the child aborted is raise, the status in position 2
-                                        status = info[1].split('***')[-1] if '***' in info[1] else info[2].split('***')[-1]
+                                        status = self._get_status_from_info(info)
                                     else:
                                         status = info[4]
 
