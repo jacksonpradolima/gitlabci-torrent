@@ -146,9 +146,7 @@ class Analyzer(object):
         total_logs = len([name for name in os.listdir('.') if os.path.isfile(name)])
 
         with alive_bar(total_logs) as bar:
-            for file in glob.glob("*.log"):
-                print(f"Log {i}/{total_logs}")
-
+            for file in glob.glob("*.log"):                
                 # Identifying the file
                 pipeline_id, sha, job_id = file.replace('.log', '').split("_")
                 pipeline_id = int(pipeline_id)
