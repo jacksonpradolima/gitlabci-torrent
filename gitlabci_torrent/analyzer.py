@@ -53,86 +53,91 @@ class Analyzer(object):
                         if valid_info:
                             # Ignore line with "Start NUMBER: 'test case X'"
                             if f'{tc_count}/{num_tc}' in line and 'Test' in line:
-                                line = line.strip()
+                                try:
+                                    line = line.strip()
 
-                                tc_count += 1
-                                if unable_find in line:
-                                    # 'Unable find' was put in the line wrongly
-                                    if len(line.split('/')) > 2:
-                                        # The line also contains some path (garbage)
-                                        # We ignore the first part (f'{tc_count}/{num_tc}' )
-                                        temp_line = line.split(unable_find)[0].strip()
-                                    else:
-                                        line = line.replace(unable_find, '')
+                                    tc_count += 1
+                                    if unable_find in line:
+                                        # 'Unable find' was put in the line wrongly
+                                        if len(line.split('/')) > 2:
+                                            # The line also contains some path (garbage)
+                                            # We ignore the first part (f'{tc_count}/{num_tc}' )
+                                            temp_line = line.split(unable_find)[0].strip()
+                                        else:
+                                            line = line.replace(unable_find, '')
 
-                                        # Remove the wrong part
-                                        temp_line = ''.join(line.strip().split(":")[:-1])
+                                            # Remove the wrong part
+                                            temp_line = ''.join(line.strip().split(":")[:-1])
 
-                                    # Get the right part from the next line
-                                    next_line = next(ilog)
-                                    if ":" in temp_line:
-                                        temp_line += next_line.strip()
-                                    else:
-                                        temp_line += ": " + next_line.strip()
-                                    line = temp_line                                    
-                                
-                                temp_line = line.strip().split(":")
-
-                                if len(temp_line) > 2:
-                                    # For instance, when we have Exception status
-                                    temp_line[1] = ' '.join(temp_line[1:])
-                                    del temp_line[-1]
-
-                                info = [x.strip() for x in temp_line]
-                                info = info[-1].split(" ")
-
-                                if 'Failed' in line or 'Timeout' in line or 'Not Run' in line or 'Exception' in line or 'Skipped' in line:
-                                    # When the test case status is Failed or Timeout it
-                                    # is in other position (1)
-                                    # When the child aborted is raise, the status in position 2
-                                    status = info[1].split('***')[-1] if '***' in info[1] else info[2].split('***')[-1]
-                                else:
-                                    status = info[4]
-
-                                dur = 0
-                                tc_name = info[0]  # test case name
-                                time_magnitude = info[-1]  # duration magnitude, for instance, in sec
-
-                                # Not = Not Run
-                                if status not in self.tc_status:
-                                    # Maybe the status is in the next two lines:
-                                    for i in range(2):
+                                        # Get the right part from the next line
                                         next_line = next(ilog)
-                                        if any(tc_s in next_line for tc_s in self.tc_status):
-                                            # Split the line and remove empty itens
-                                            next_line = list(filter(None, next_line.strip().split(" ")))
-                                            tc_name = next_line[0]  # test case name
-                                            time_magnitude = next_line[-1]  # duration magnitude, for instance, in sec
-                                            status = [s for s in self.tc_status if any(s in xs for xs in next_line)]
+                                        if ":" in temp_line:
+                                            temp_line += next_line.strip()
+                                        else:
+                                            temp_line += ": " + next_line.strip()
+                                        line = temp_line
 
-                                            status = ''.join(status)
+                                    temp_line = line.strip().split(":")
 
-                                            if status not in self.tc_status and i != 0:
-                                                raise Exception("Unknow test case status")
-                                            else:
-                                                dur = float(next_line[-2])
-                                                break
-                                        elif i != 0:
-                                            raise Exception("Unknow test case status. Line: " + line)
-                                else:
-                                    dur = float(info[-2])
+                                    if len(temp_line) > 2:
+                                        # For instance, when we have Exception status
+                                        temp_line[1] = ' '.join(temp_line[1:])
+                                        del temp_line[-1]
 
-                                # Get the available information
-                                current_test = tc_name
-                                status = 0 if status == 'Passed' else 1
-                                duration = dur  # tc duration
-                                total_duration += duration
+                                    info = [x.strip() for x in temp_line]
+                                    info = info[-1].split(" ")
 
-                                # minutes * 60 + sec
-                                if time_magnitude != 'sec':
-                                    raise Exception("Unknow test case duration")
+                                    if 'Failed' in line or 'Timeout' in line or 'Not Run' in line or 'Exception' in line or 'Skipped' in line:
+                                        # When the test case status is Failed or Timeout it
+                                        # is in other position (1)
+                                        # When the child aborted is raise, the status in position 2
+                                        status = info[1].split('***')[-1] if '***' in info[1] else info[2].split('***')[-1]
+                                    else:
+                                        status = info[4]
 
-                                tests.append([current_test, status, duration])
+                                    dur = 0
+                                    tc_name = info[0]  # test case name
+                                    time_magnitude = info[-1]  # duration magnitude, for instance, in sec
+
+                                    # Not = Not Run
+                                    if status not in self.tc_status:
+                                        # Maybe the status is in the next two lines:
+                                        for i in range(2):
+                                            next_line = next(ilog)
+                                            if any(tc_s in next_line for tc_s in self.tc_status):
+                                                # Split the line and remove empty itens
+                                                next_line = list(filter(None, next_line.strip().split(" ")))
+                                                tc_name = next_line[0]  # test case name
+                                                time_magnitude = next_line[-1]  # duration magnitude, for instance, in sec
+                                                status = [s for s in self.tc_status if any(s in xs for xs in next_line)]
+
+                                                status = ''.join(status)
+
+                                                if status not in self.tc_status and i != 0:
+                                                    raise Exception("Unknow test case status")
+                                                else:
+                                                    dur = float(next_line[-2])
+                                                    break
+                                            elif i != 0:
+                                                raise Exception("Unknow test case status. Line: " + line)
+                                    else:
+                                        dur = float(info[-2])
+
+                                    # Get the available information
+                                    current_test = tc_name
+                                    status = 0 if status == 'Passed' else 1
+                                    duration = dur  # tc duration
+                                    total_duration += duration
+
+                                    # minutes * 60 + sec
+                                    if time_magnitude != 'sec':
+                                        raise Exception("Unknow test case duration")
+
+                                    tests.append([current_test, status, duration])
+                                except ValueError as e:
+                                    raise Exception("Error to parse value. Line: " + line)
+                                except Exception:
+                                    raise
 
                         # If I started the line which contains the tests information
                         if 'Test project' in line:
