@@ -67,7 +67,10 @@ class Analyzer(object):
                                     # When the child aborted is raise, the status in position 2
                                     status = info[1].split('***')[-1] if '***' in info[1] else info[2].split('***')[-1]
                                 else:
-                                    status = info[4]
+                                    if len(info) > 3:
+                                        status = info[4]
+                                    else:
+                                        print(info)
 
                                 dur = 0
                                 tc_name = info[0]  # test case name
@@ -131,7 +134,10 @@ class Analyzer(object):
             columns=['job_id', 'sha', 'pipeline_id', 'last_run', 'test_name', 'verdict', 'duration'])
 
         i = 1
+        total_logs = len([name for name in os.listdir('.') if os.path.isfile(name)])
         for file in glob.glob("*.log"):
+            print(f"Log {i}/{total_logs}")
+            
             # Identifying the file
             pipeline_id, sha, job_id = file.replace('.log', '').split("_")
             pipeline_id = int(pipeline_id)
