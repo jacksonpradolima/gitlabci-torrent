@@ -2,6 +2,7 @@ import glob
 import os
 
 import pandas as pd
+from alive_progress import alive_bar
 
 
 class Analyzer(object):
@@ -51,8 +52,18 @@ class Analyzer(object):
                             # Ignore line with "Start NUMBER: 'test case X'"
                             if f'{tc_count}/{num_tc}' in line and 'Test' in line:
                                 tc_count += 1
+                                if 'Unable to find required file:' in line:
+                                    line = line.replace('Unable to find required file:', '')
 
-                                temp_line = line.strip().split(":")
+                                    # Remove the wrong part
+                                    temp_line = line.strip().split(":")[0]
+
+                                    # Get the right part from the next line
+                                    next_line = next(ilog)
+                                    temp_line.append(next_line.strip())
+                                else:
+                                    temp_line = line.strip().split(":")
+
                                 if len(temp_line) > 2:
                                     # For instance, when we have Exception status
                                     temp_line[1] = ' '.join(temp_line[1:])
@@ -67,10 +78,7 @@ class Analyzer(object):
                                     # When the child aborted is raise, the status in position 2
                                     status = info[1].split('***')[-1] if '***' in info[1] else info[2].split('***')[-1]
                                 else:
-                                    if len(info) > 3:
-                                        status = info[4]
-                                    else:
-                                        print(info)
+                                    status = info[4]
 
                                 dur = 0
                                 tc_name = info[0]  # test case name
@@ -135,41 +143,44 @@ class Analyzer(object):
 
         i = 1
         total_logs = len([name for name in os.listdir('.') if os.path.isfile(name)])
-        for file in glob.glob("*.log"):
-            print(f"Log {i}/{total_logs}")
-            
-            # Identifying the file
-            pipeline_id, sha, job_id = file.replace('.log', '').split("_")
-            pipeline_id = int(pipeline_id)
-            job_id = int(job_id)
 
-            # Get information about the job
-            info = df[(df.job_id == job_id) & (df.commit_id == sha)
-                      & (df.pipeline_id == pipeline_id)].iloc[0]
+        with alive_bar(total_logs) as bar:
+            for file in glob.glob("*.log"):
+                print(f"Log {i}/{total_logs}")
 
-            try:
-                tests = self.get_tests(file)
-            except Exception as e:
+                # Identifying the file
+                pipeline_id, sha, job_id = file.replace('.log', '').split("_")
+                pipeline_id = int(pipeline_id)
+                job_id = int(job_id)
 
-                raise Exception(f"Error in Pipeline: {pipeline_id}, SHA: {sha}, Job: {job_id}. " +
-                                f"{str(e)}. \n\nMetainformation:\n {info}")
+                # Get information about the job
+                info = df[(df.job_id == job_id) & (df.commit_id == sha)
+                          & (df.pipeline_id == pipeline_id)].iloc[0]
 
-            if len(tests) > 0:
-                # Collect the tests for a log
-                df_tests_temp = pd.DataFrame(tests, columns=['test_name', 'verdict', 'duration'])
+                try:
+                    tests = self.get_tests(file)
+                except Exception as e:
 
-                df_tests_temp['job_id'] = job_id
-                df_tests_temp['sha'] = sha
-                df_tests_temp['pipeline_id'] = pipeline_id
-                df_tests_temp['last_run'] = info['job_started_at']
+                    raise Exception(f"Error in Pipeline: {pipeline_id}, SHA: {sha}, Job: {job_id}. " +
+                                    f"{str(e)}. \n\nMetainformation:\n {info}")
 
-                df_tests_temp = df_tests_temp[
-                    ['job_id', 'sha', 'pipeline_id', 'last_run', 'test_name', 'verdict', 'duration']]
+                if len(tests) > 0:
+                    # Collect the tests for a log
+                    df_tests_temp = pd.DataFrame(tests, columns=['test_name', 'verdict', 'duration'])
 
-                # Merge information
-                df_tests = df_tests.append(df_tests_temp)
+                    df_tests_temp['job_id'] = job_id
+                    df_tests_temp['sha'] = sha
+                    df_tests_temp['pipeline_id'] = pipeline_id
+                    df_tests_temp['last_run'] = info['job_started_at']
 
-            i += 1
+                    df_tests_temp = df_tests_temp[
+                        ['job_id', 'sha', 'pipeline_id', 'last_run', 'test_name', 'verdict', 'duration']]
+
+                    # Merge information
+                    df_tests = df_tests.append(df_tests_temp)
+
+                i += 1
+                bar() # process each item
 
         # Save the results
         df_tests.to_csv('data-filtering.csv', sep=';', index=False)
