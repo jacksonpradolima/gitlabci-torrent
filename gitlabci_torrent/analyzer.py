@@ -31,6 +31,8 @@ class Analyzer(object):
         for i in info:
             if '***' in i:
                 return i.split('***')[-1]
+            if i in self.tc_status:
+                return i
 
         return ""
 
@@ -92,6 +94,9 @@ class Analyzer(object):
                                                 if len(pos_tc_name) > 1 and pos_tc_name not in next_line:
                                                     temp_line += ': ' + pos_tc_name
 
+                                                for i in possible_tc_names[1:]:
+                                                    if i in self.tc_status or i.replace('***','') in self.tc_status:
+                                                        temp_line += ' ' + i
 
                                         if ":" in temp_line:
                                             temp_line += ' ' + next_line.strip()
@@ -108,14 +113,17 @@ class Analyzer(object):
 
                                     info = [x.strip() for x in temp_line]
                                     info = info[-1].split(" ")
+                                    status = self._get_status_from_info(info)
 
-                                    if 'Failed' in line or 'Timeout' in line or 'Not Run' in line or 'Exception' in line or 'Skipped' in line:
+                                    #if 'Failed' in line or 'Timeout' in line or 'Not Run' in line or 'Exception' in line or 'Skipped' in line:
                                         # When the test case status is Failed or Timeout it
                                         # is in other position (1)
                                         # When the child aborted is raise, the status in position 2
-                                        status = self._get_status_from_info(info)
-                                    else:
-                                        status = info[4]
+                                    #    status = self._get_status_from_info(info)
+                                    #else:
+                                    #    if len(info) < 4:
+                                    #       print(info)
+                                    #   status = info[4]
 
                                     dur = 0
                                     tc_name = info[0]  # test case name
