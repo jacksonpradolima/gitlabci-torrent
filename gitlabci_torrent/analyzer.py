@@ -57,8 +57,9 @@ class Analyzer(object):
 
                                 tc_count += 1
                                 if unable_find in line:
-                                    # The line also contains some path (garbage)
+                                    # 'Unable find' was put in the line wrongly
                                     if len(line.split('/')) > 2:
+                                        # The line also contains some path (garbage)
                                         # We ignore the first part (f'{tc_count}/{num_tc}' )
                                         temp_line = line.split(unable_find)[0].strip()
                                     else:
