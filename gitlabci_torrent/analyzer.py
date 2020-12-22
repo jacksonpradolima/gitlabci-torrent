@@ -37,6 +37,8 @@ class Analyzer(object):
 
         num_tc = self.get_number_test_cases(path)
 
+        unable_find = 'Unable to find required file:'
+        
         if num_tc > 0:
             tc_count = 1
             # For each line in the log
@@ -52,17 +54,21 @@ class Analyzer(object):
                             # Ignore line with "Start NUMBER: 'test case X'"
                             if f'{tc_count}/{num_tc}' in line and 'Test' in line:
                                 tc_count += 1
-                                if 'Unable to find required file:' in line:
-                                    line = line.replace('Unable to find required file:', '')
+                                if unable_find in line:
+                                    # The line also contains some path (garbage)
+                                    if '/' in line:
+                                        temp_line = line.split(unable_find)[0].strip()
+                                    else:
+                                        line = line.replace(unable_find, '')
 
-                                    # Remove the wrong part
-                                    temp_line = line.strip().split(":")[0]
+                                        # Remove the wrong part
+                                        temp_line = ''.join(line.strip().split(":")[:-1])
 
                                     # Get the right part from the next line
                                     next_line = next(ilog)
                                     temp_line += ": " + next_line.strip()
-                                    line = temp_line
-
+                                    line = temp_line                                    
+                                
                                 temp_line = line.strip().split(":")
 
                                 if len(temp_line) > 2:
@@ -105,7 +111,7 @@ class Analyzer(object):
                                                 dur = float(next_line[-2])
                                                 break
                                         elif i != 0:
-                                            raise Exception("Unknow test case status")
+                                            raise Exception("Unknow test case status. Line: " + line)
                                 else:
                                     dur = float(info[-2])
 
