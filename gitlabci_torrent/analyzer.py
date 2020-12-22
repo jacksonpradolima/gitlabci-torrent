@@ -75,23 +75,25 @@ class Analyzer(object):
 
                                 # Not = Not Run
                                 if status not in self.tc_status:
-                                    # Maybe the status is in the next line:
-                                    next_line = next(ilog)
-                                    if any(tc_s in next_line for tc_s in self.tc_status):
-                                        # Split the line and remove empty itens
-                                        next_line = list(filter(None, next_line.strip().split(" ")))
-                                        tc_name = next_line[0]  # test case name
-                                        time_magnitude = next_line[-1]  # duration magnitude, for instance, in sec
-                                        status = [s for s in self.tc_status if any(s in xs for xs in next_line)]
+                                    # Maybe the status is in the next two lines:
+                                    for i in range(2):
+                                        next_line = next(ilog)
+                                        if any(tc_s in next_line for tc_s in self.tc_status):
+                                            # Split the line and remove empty itens
+                                            next_line = list(filter(None, next_line.strip().split(" ")))
+                                            tc_name = next_line[0]  # test case name
+                                            time_magnitude = next_line[-1]  # duration magnitude, for instance, in sec
+                                            status = [s for s in self.tc_status if any(s in xs for xs in next_line)]
 
-                                        status = ''.join(status)
+                                            status = ''.join(status)
 
-                                        if status not in self.tc_status:
+                                            if status not in self.tc_status and i != 0:
+                                                raise Exception("Unknow test case status")
+                                            else:
+                                                dur = float(next_line[-2])
+                                                break
+                                        elif i != 0:
                                             raise Exception("Unknow test case status")
-                                        else:
-                                            dur = float(next_line[-2])
-                                    else:
-                                        raise Exception("Unknow test case status")
                                 else:
                                     dur = float(info[-2])
 
