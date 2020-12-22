@@ -53,10 +53,13 @@ class Analyzer(object):
                         if valid_info:
                             # Ignore line with "Start NUMBER: 'test case X'"
                             if f'{tc_count}/{num_tc}' in line and 'Test' in line:
+                                line = line.strip()
+
                                 tc_count += 1
                                 if unable_find in line:
                                     # The line also contains some path (garbage)
-                                    if '/' in line:
+                                    if len(line.split('/')) > 2:
+                                        # We ignore the first part (f'{tc_count}/{num_tc}' )
                                         temp_line = line.split(unable_find)[0].strip()
                                     else:
                                         line = line.replace(unable_find, '')
@@ -66,7 +69,10 @@ class Analyzer(object):
 
                                     # Get the right part from the next line
                                     next_line = next(ilog)
-                                    temp_line += ": " + next_line.strip()
+                                    if ":" in temp_line:
+                                        temp_line += next_line.strip()
+                                    else:
+                                        temp_line += ": " + next_line.strip()
                                     line = temp_line                                    
                                 
                                 temp_line = line.strip().split(":")
