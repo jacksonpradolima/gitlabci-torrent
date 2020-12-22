@@ -60,7 +60,7 @@ class Analyzer(object):
 
                                     # Get the right part from the next line
                                     next_line = next(ilog)
-                                    temp_line.append(next_line.strip())
+                                    temp_line += ": " + next_line.strip()
                                 else:
                                     temp_line = line.strip().split(":")
 
