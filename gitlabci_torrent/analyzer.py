@@ -9,6 +9,8 @@ class Analyzer(object):
     def __init__(self, log_dir):
         self.log_dir = log_dir
         self.project = log_dir.split(os.sep)[-1]
+
+        # Not = Not Run
         self.tc_status = ['Passed', 'Failed', 'Timeout', 'Not', 'Exception', 'Skipped']
 
     def get_number_test_cases(self, path):
@@ -61,8 +63,9 @@ class Analyzer(object):
 
                                 if 'Failed' in line or 'Timeout' in line or 'Not Run' in line or 'Exception' in line or 'Skipped' in line:
                                     # When the test case status is Failed or Timeout it
-                                    # is in other position
-                                    status = info[1].split('***')[-1]
+                                    # is in other position (1)
+                                    # When the child aborted is raise, the status in position 2
+                                    status = info[1].split('***')[-1] if '***' in info[1] else info[2].split('***')[-1]
                                 else:
                                     status = info[4]
 
