@@ -7,7 +7,7 @@ from gitlabci_torrent.analyzer import Analyzer
 class RunningAnalyzer(unittest.TestCase):
 
     def test_harvester(self):
-        a = Analyzer(f'logs{os.sep}libssh@libssh-mirror')
+        a = Analyzer(f'logs{os.sep}core@dune-common')
 
         a.run()
 
@@ -15,7 +15,7 @@ class RunningAnalyzer(unittest.TestCase):
 
     @unittest.skip
     def test_harvester_split(self):
-        a = Analyzer(f'logs{os.sep}libssh@libssh-mirror')
+        a = Analyzer(f'logs{os.sep}core@dune-common')
 
         a.split_data_by_job_name()
 
