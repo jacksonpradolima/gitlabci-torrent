@@ -5,18 +5,15 @@ from gitlabci_torrent.data_extraction import DataExtraction
 
 
 class RunningDataExtraction(unittest.TestCase):
+    def setUp(self):
+        self.data_extraction = DataExtraction(f'logs{os.sep}core@dune-common', 'dune')
+
     def test_extract_total_set(self):
-        a = DataExtraction(f'logs{os.sep}libssh@libssh-mirror')
-
-        a.extract_total_set()
-
+        self.data_extraction.extract_total_set()
         self.assertTrue(True)
 
     def test_extract_by_variant(self):
-        a = DataExtraction(f'logs{os.sep}libssh@libssh-mirror')
-
-        a.extract_by_variant()
-
+        self.data_extraction.extract_by_variant()
         self.assertTrue(True)
 
 

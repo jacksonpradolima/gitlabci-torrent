@@ -9,14 +9,16 @@ if __name__ == '__main__':
     ap.add_argument('-d', '--log_dir',
                     help='Directory with the logs. For instance: logs/core@dune-common', default='logs')
 
+    ap.add_argument('-p', '--project_name',
+                    help='Project Name', required=True)
+
     args = ap.parse_args()
 
-    a = DataExtraction(args.log_dir)
+    a = DataExtraction(args.log_dir, args.project_name)
 
-    print("Extrating Total Set...")
+    #print("Extrating Total Set...")
     a.extract_total_set()
 
-    print("Extrating By Variant...")
-    a.extract_by_variant()
+    #a.extract_by_variant()
 
-    print("The analyzer process ended!")
+    print("The data extraction process ended!")

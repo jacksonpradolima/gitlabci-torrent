@@ -3,11 +3,13 @@ import os
 from pathlib import Path
 
 import pandas as pd
+from alive_progress import alive_bar
 
 
 class DataExtraction(object):
-    def __init__(self, log_dir):
+    def __init__(self, log_dir, project_name):
         self.log_dir = log_dir
+        self.project_name = project_name
         self.df_main = None
         self.df_parsed = None
 
@@ -16,7 +18,7 @@ class DataExtraction(object):
             df_repo = pd.read_csv(f'{self.log_dir}{os.sep}repo-data-jobs-gitlab-ci.csv', sep=';')
             df_min = pd.read_csv(f'{self.log_dir}{os.sep}data-filtering.csv', sep=';')
 
-            # Merge with Travis CI Information
+            # Merge with GitLab CI Information
             self.df_main = pd.merge(df_min, df_repo, on=['job_id', 'job_id'], how='left')
 
         return self.df_main
@@ -33,8 +35,12 @@ class DataExtraction(object):
             self.df_parsed = self.df_parsed[['job_id', 'job_name', 'sha', 'pipeline_id_y',
                                              'last_run', 'test_name', 'verdict', 'duration']]
 
+            # Workaround to avoid problems with date (when we get the CI Cycle number)
+            self.df_parsed.last_run = pd.to_datetime(self.df_parsed.last_run)
+            self.df_parsed.last_run = self.df_parsed['last_run'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S.%f'))
             self.df_parsed.last_run = pd.to_datetime(self.df_parsed.last_run)
             self.df_parsed.sort_values(by=['last_run'], inplace=True)
+
             self.df_parsed = self.df_parsed.reset_index(drop=True)
 
             # Convert the test case names and commit's sha to a ID
@@ -86,43 +92,61 @@ class DataExtraction(object):
         :return:
         """
         # Save the unique test case set as total
-        path = f"{self.log_dir}{os.sep}libssh@total"
+        path = f"{self.log_dir}{os.sep}{self.project_name}@total"
+        path = path.translate({ord(c): "_" for c in "!#$%^&*()[]{};:,.<>?|`~=+"})
         Path(path).mkdir(parents=True, exist_ok=True)
 
-        df = self.get_data_parsed()
+        with alive_bar(5, title="Extracting Total Set") as bar:
+            bar.text('Reading Data')
+            df = self.get_data_parsed()
 
-        df2 = self.feature_engineering(df.copy())
-        df2['Variant'] = df['job_name']
-        df2.to_csv(f'{path}{os.sep}data-variants.csv', sep=';', na_rep='[]',
-                   header=True, index=False,
-                   quoting=csv.QUOTE_NONE)
+            bar.text('Parsing Data')
+            df2 = self.feature_engineering(df.copy())
 
-        df_total = df.groupby(['sha', 'pipeline_id_y', 'test_name'], as_index=False).max()
-        df_total = df_total.reset_index(drop=True)
-        df_total.to_csv(f"{path}{os.sep}data-filtering.csv", sep=';', na_rep='[]',
-                        header=True, index=False,
-                        quoting=csv.QUOTE_NONE)
+            df2['Variant'] = df['job_name']
+            df2.to_csv(f'{path}{os.sep}data-variants.csv', sep=';', na_rep='[]',
+                       header=True, index=False,
+                       quoting=csv.QUOTE_NONE)
 
-        df_total = self.feature_engineering(df_total)
-        df_total.to_csv(f'{path}{os.sep}features-engineered.csv', sep=';', na_rep='[]',
-                        header=True, index=False,
-                        quoting=csv.QUOTE_NONE)
+            bar.text('Data Variants file saved')
+
+            df_total = df.groupby(['sha', 'pipeline_id_y', 'test_name'], as_index=False).max()
+            df_total = df_total.reset_index(drop=True)
+            df_total.to_csv(f"{path}{os.sep}data-filtering.csv", sep=';', na_rep='[]',
+                            header=True, index=False,
+                            quoting=csv.QUOTE_NONE)
+            bar.text('Data Filtering file saved')
+
+            df_total = self.feature_engineering(df_total)
+            df_total.to_csv(f'{path}{os.sep}features-engineered.csv', sep=';', na_rep='[]',
+                            header=True, index=False,
+                            quoting=csv.QUOTE_NONE)
+
+            bar.text('Features Engineering file saved')
 
     def extract_by_variant(self):
+        print("Reading data")
         df = self.get_data_parsed()
         variants = df["job_name"].unique()
+        print("Ok, parsing variants...")
 
-        for variant_name in variants:
-            path = f"{self.log_dir}{os.sep}libssh@{variant_name.replace('/', '-')}"
-            Path(path).mkdir(parents=True, exist_ok=True)
+        with alive_bar(len(variants), title="Extracting By Variant") as bar:
+            for variant_name in variants:
+                path = f"{self.log_dir}{os.sep}{self.project_name}@{variant_name.replace('/', '-')}"
+                path = path.translate({ord(c): "_" for c in "!#$%^&*()[]{};:,.<>?|`~=+"})
+                Path(path).mkdir(parents=True, exist_ok=True)
 
-            df_temp = df[df.job_name == variant_name]
-            df_temp = df_temp.reset_index(drop=True)
-            df_temp.to_csv(f"{path}{os.sep}data-filtering.csv", sep=';', na_rep='[]',
-                           header=True, index=False,
-                           quoting=csv.QUOTE_NONE)
+                df_temp = df[df.job_name == variant_name]
+                df_temp = df_temp.reset_index(drop=True)
+                df_temp.to_csv(f"{path}{os.sep}data-filtering.csv", sep=';', na_rep='[]',
+                               header=True, index=False,
+                               quoting=csv.QUOTE_NONE)
 
-            tcdf = self.feature_engineering(df_temp)
-            tcdf.to_csv(f"{path}{os.sep}features-engineered.csv", sep=';', na_rep='[]',
-                        header=True, index=False,
-                        quoting=csv.QUOTE_NONE)
+                tcdf = self.feature_engineering(df_temp)
+                tcdf.to_csv(f"{path}{os.sep}features-engineered.csv", sep=';', na_rep='[]',
+                            header=True, index=False,
+                            quoting=csv.QUOTE_NONE)
+
+                bar()
+
+        print("Variants parsed")
