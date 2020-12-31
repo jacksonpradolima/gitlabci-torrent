@@ -11,11 +11,11 @@ from gitlabci_torrent.data_extraction import DataExtraction
 
 
 class RunningAnalyzer(unittest.TestCase):
-    @unittest.skip
+    #@unittest.skip
     def test_main_system(self):
-        a = ProjectStatus(f'logs{os.sep}libssh@libssh-mirror')
+        a = ProjectStatus(f'logs{os.sep}core@dune-common')
 
-        print(a.get_summary().head())
+        print(tabulate(a.get_summary(), headers='keys', tablefmt='psql', showindex=False))
 
         self.assertTrue(True)
 
@@ -23,15 +23,15 @@ class RunningAnalyzer(unittest.TestCase):
     def test_total_set(self):
         print("\nInformation about total set", end="")
 
-        a = ProjectStatus(f'logs{os.sep}libssh@libssh-mirror{os.sep}libssh@total')
+        a = ProjectStatus(f'logs{os.sep}core@dune-common{os.sep}dune@total')
 
-        print(a.get_summary().head())
+        print(tabulate(a.get_summary(), headers='keys', tablefmt='psql', showindex=False))
 
         self.assertTrue(True)
 
     #@unittest.skip
     def test_variants(self):
-        de = DataExtraction(f'logs{os.sep}libssh@libssh-mirror')
+        de = DataExtraction(f'logs{os.sep}core@dune-common', 'dune')
         variants = de.get_variants()
 
         summary_cols = ["Name", "Period", "Builds",
@@ -44,7 +44,9 @@ class RunningAnalyzer(unittest.TestCase):
 
         for variant in variants:
             variant = variant.replace('/', '-')
-            a.update_project(f'logs{os.sep}libssh@libssh-mirror{os.sep}libssh@{variant}')
+            variant = variant.translate({ord(c): "_" for c in "!#$%^&*()[]{};:,.<>?|`~=+"})
+
+            a.update_project(f'logs{os.sep}core@dune-common{os.sep}dune@{variant}')
             df = df.append(a.get_summary())
 
         print(tabulate(df, headers='keys', tablefmt='psql', showindex=False))
@@ -54,7 +56,7 @@ class RunningAnalyzer(unittest.TestCase):
     @unittest.skip
     def test_both(self):
         print("\n")
-        de = DataExtraction(f'logs{os.sep}libssh@libssh-mirror')
+        de = DataExtraction(f'logs{os.sep}core@dune-common')
         variants = sorted(de.get_variants())
 
         summary_cols = ["Name", "Period", "Builds",
@@ -63,13 +65,13 @@ class RunningAnalyzer(unittest.TestCase):
 
         df = pd.DataFrame(columns=summary_cols)
 
-        a = ProjectStatus(f'logs{os.sep}libssh@libssh-mirror{os.sep}libssh@total')
+        a = ProjectStatus(f'logs{os.sep}core@dune-common{os.sep}dune@total')
 
         df = df.append(a.get_summary())
 
         for variant in variants:
             variant = variant.replace('/', '-')
-            a.update_project(f'logs{os.sep}libssh@libssh-mirror{os.sep}libssh@{variant}')
+            a.update_project(f'logs{os.sep}core@dune-common{os.sep}dune@{variant}')
             df = df.append(a.get_summary())
 
         print(tabulate(df, headers='keys', tablefmt='psql', showindex=False))
@@ -79,7 +81,7 @@ class RunningAnalyzer(unittest.TestCase):
 
     @unittest.skip
     def test_plot_heatmap_total(self):
-        path = f'logs{os.sep}libssh@libssh-mirror{os.sep}libssh@total'
+        path = f'logs{os.sep}core@dune-common{os.sep}dune@total'
         a = ProjectStatus(path)
 
         fig, ax = plt.subplots(figsize=(30, 20))
@@ -100,12 +102,12 @@ class RunningAnalyzer(unittest.TestCase):
 
     @unittest.skip
     def test_plot_heatmap_variants(self):
-        de = DataExtraction(f'logs{os.sep}libssh@libssh-mirror')
+        de = DataExtraction(f'logs{os.sep}core@dune-common')
         variants = sorted(de.get_variants())
 
         for variant in variants:
             variant = variant.replace('/', '-')
-            path = f'logs{os.sep}libssh@libssh-mirror{os.sep}libssh@{variant}'
+            path = f'logs{os.sep}core@dune-common{os.sep}dune@{variant}'
             a = ProjectStatus(path)
 
             fig, ax = plt.subplots(figsize=(30, 20))
@@ -126,7 +128,7 @@ class RunningAnalyzer(unittest.TestCase):
 
     @unittest.skip
     def test_plot_variant(self):
-        path = f'logs{os.sep}libssh@libssh-mirror{os.sep}libssh@visualstudio-x86'
+        path = f'logs{os.sep}core@dune-common{os.sep}libssh@visualstudio-x86'
         a = ProjectStatus(path)
 
         fig, ax = plt.subplots(figsize=(30, 20))
