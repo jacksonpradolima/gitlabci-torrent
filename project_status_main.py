@@ -9,23 +9,27 @@ from alive_progress import alive_bar
 from gitlabci_torrent.project_status import ProjectStatus
 from gitlabci_torrent.data_extraction import DataExtraction
 
-summary_cols = ["Name", "Period", "Builds", "Faults", "Tests", "Duration", "Interval"]
+summary_cols = ["Name", "Period", "Builds",
+                "Faults", "Tests", "Duration", "Interval"]
 
 
 def plot_project_status(project_stat: ProjectStatus, path):
     fig, ax = plt.subplots(figsize=(30, 20))
     project_stat.visualize_dataset_heatmap(fig, ax)
     plt.savefig(os.path.join(path, "heatpmap.pdf"), bbox_inches='tight')
+    plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(15, 10))
     project_stat.visualize_dataset_info(ax)
-    plt.savefig(os.path.join(path, "failures_by_cycle.pdf"), bbox_inches='tight')
-    plt.clf()
+    plt.savefig(os.path.join(path, "failures_by_cycle.pdf"),
+                bbox_inches='tight')
+    plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(15, 10))
     project_stat.visualize_testcase_volatility(ax)
-    plt.savefig(os.path.join(path, "testcase_volatility.pdf"), bbox_inches='tight')
-    plt.clf()
+    plt.savefig(os.path.join(path, "testcase_volatility.pdf"),
+                bbox_inches='tight')
+    plt.close(fig)
 
 
 if __name__ == '__main__':
@@ -46,7 +50,7 @@ if __name__ == '__main__':
     data_extr = DataExtraction(args.log_dir, args.project_name)
     variants = data_extr.get_variants()
 
-    with alive_bar(len(variants)+3, title="Project Status") as bar:
+    with alive_bar(len(variants) + 3, title="Project Status") as bar:
         # Get the general status from project
         bar.text('Processing the general status from project...')
         project_stat = ProjectStatus(args.log_dir)
@@ -63,7 +67,8 @@ if __name__ == '__main__':
         bar.text('Processing the project status for each variant...')
         for variant in variants:
             variant = variant.replace('/', '-')
-            variant = variant.translate({ord(c): "_" for c in "!#$%^&*()[]{};:,.<>?|`~=+"})
+            variant = variant.translate(
+                {ord(c): "_" for c in "!#$%^&*()[]{};:,.<>?|`~=+"})
 
             path = f"{args.log_dir}{os.sep}{args.project_name}@{variant}"
             project_stat.update_project(path)
@@ -72,8 +77,9 @@ if __name__ == '__main__':
 
             bar()
 
-    print("\n\n====== Project Status ====== ")
-    print(tabulate(df, headers='keys', tablefmt='psql', showindex=False))
+    print("\n\nExporting Project Status to project_status.txt")
+    with open('project_status.txt', 'w') as tf:
+        tf.write(tabulate(df, headers='keys', tablefmt='psql', showindex=False))
 
-    print("\n\n====== Project Status (LaTeX) ====== ")
-    print(df.to_latex(index=False))
+    print("Exporting Project Status to project_status_table.tex")
+    df.to_latex('project_status_table.tex', index=False)
