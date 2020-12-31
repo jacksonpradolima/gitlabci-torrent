@@ -50,14 +50,16 @@ if __name__ == '__main__':
     data_extr = DataExtraction(args.log_dir, args.project_name)
     variants = data_extr.get_variants()
 
-    with alive_bar(len(variants) + 3, title="Project Status") as bar:
+    with alive_bar(len(variants) + 2, title="Project Status") as bar:
         # Get the general status from project
-        bar.text('Processing the general status from project...')
-        project_stat = ProjectStatus(args.log_dir)
-        df = df.append(project_stat.get_summary())
+        #bar.text('Processing the general status from project...')
+        #bar()
+        #project_stat = ProjectStatus(args.log_dir)
+        #df = df.append(project_stat.get_summary())
 
         # Get the project status from total set
         bar.text('Processing the project status from total set...')
+        bar()
         path = f"{args.log_dir}{os.sep}{args.project_name}@total"
         project_stat = ProjectStatus(path)
         df = df.append(project_stat.get_summary())
@@ -65,12 +67,11 @@ if __name__ == '__main__':
 
         # Get the status for each variant from project
         bar.text('Processing the project status for each variant...')
+        bar()
         for variant in variants:
-            variant = variant.replace('/', '-')
-            variant = variant.translate(
-                {ord(c): "_" for c in "!#$%^&*()[]{};:,.<>?|`~=+"})
-
+            variant = variant.replace('/', '-')            
             path = f"{args.log_dir}{os.sep}{args.project_name}@{variant}"
+            
             project_stat.update_project(path)
             df = df.append(project_stat.get_summary())
             plot_project_status(project_stat, path)

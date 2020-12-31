@@ -81,7 +81,9 @@ class DataExtraction(object):
 
     def get_variants(self):
         df = self.get_data_parsed()
-        return df["job_name"].unique()
+        
+        jobs = [i.translate({ord(c): "_" for c in "!#$%^&*()[]{};:,.<>?|`~=+"}) for i in df["job_name"].unique().tolist()] 
+        return jobs
 
     def extract_total_set(self):
         """
@@ -98,9 +100,11 @@ class DataExtraction(object):
 
         with alive_bar(5, title="Extracting Total Set") as bar:
             bar.text('Reading Data')
+            bar()
             df = self.get_data_parsed()
 
             bar.text('Parsing Data')
+            bar()
             df2 = self.feature_engineering(df.copy())
 
             df2['Variant'] = df['job_name']
@@ -109,34 +113,38 @@ class DataExtraction(object):
                        quoting=csv.QUOTE_NONE)
 
             bar.text('Data Variants file saved')
-
+            bar()
             df_total = df.groupby(['sha', 'pipeline_id_y', 'test_name'], as_index=False).max()
             df_total = df_total.reset_index(drop=True)
             df_total.to_csv(f"{path}{os.sep}data-filtering.csv", sep=';', na_rep='[]',
                             header=True, index=False,
                             quoting=csv.QUOTE_NONE)
             bar.text('Data Filtering file saved')
-
+            bar()
+            
             df_total = self.feature_engineering(df_total)
             df_total.to_csv(f'{path}{os.sep}features-engineered.csv', sep=';', na_rep='[]',
                             header=True, index=False,
                             quoting=csv.QUOTE_NONE)
 
             bar.text('Features Engineering file saved')
+            bar()
 
     def extract_by_variant(self):
         print("Reading data")
         df = self.get_data_parsed()
-        variants = df["job_name"].unique()
+        variants = self.get_variants()
         print("Ok, parsing variants...")
 
+        df2 = df.copy()
+        df2['job_name'] = df2['job_name'].apply(lambda x: x.translate({ord(c): "_" for c in "!#$%^&*()[]{};:,.<>?|`~=+"}))
+        
         with alive_bar(len(variants), title="Extracting By Variant") as bar:
             for variant_name in variants:
-                path = f"{self.log_dir}{os.sep}{self.project_name}@{variant_name.replace('/', '-')}"
-                path = path.translate({ord(c): "_" for c in "!#$%^&*()[]{};:,.<>?|`~=+"})
+                path = f"{self.log_dir}{os.sep}{self.project_name}@{variant_name.replace('/', '-')}"                
                 Path(path).mkdir(parents=True, exist_ok=True)
 
-                df_temp = df[df.job_name == variant_name]
+                df_temp = df2[df2.job_name == variant_name]
                 df_temp = df_temp.reset_index(drop=True)
                 df_temp.to_csv(f"{path}{os.sep}data-filtering.csv", sep=';', na_rep='[]',
                                header=True, index=False,
