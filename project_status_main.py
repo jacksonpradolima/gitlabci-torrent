@@ -78,9 +78,11 @@ if __name__ == '__main__':
 
             bar()
 
-    print("\n\nExporting Project Status to project_status.txt")
-    with open('project_status.txt', 'w') as tf:
+    df.sort_values(by=['Name'], inplace=True)
+    
+    print(f"\n\nExporting Project Status to project_status_{args.project_name}.txt")
+    with open(f'project_status_{args.project_name}.txt', 'w') as tf:
         tf.write(tabulate(df, headers='keys', tablefmt='psql', showindex=False))
 
-    print("Exporting Project Status to project_status_table.tex")
-    df.to_latex('project_status_table.tex', index=False)
+    print(f"Exporting Project Status to project_status_table_{args.project_name}.tex")
+    df.to_latex(f'project_status_table_{args.project_name}.tex', index=False)
