@@ -51,6 +51,10 @@ The following command allows to install the required dependencies:
 1. Create a personal Access Token (see [Personal Token Acess](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html) guide) for the GitLab instance desired, for example, https://gitlab.com or https://gitlab.dune-project.org/. This token needs privileges to read the repository and gather the logs.
 2. Complete the **configuration.properties** file with your GitLab Access Token
 
+**WARNING**: Sometimes the connection does not work, and you need to change the path for the properties file in [**gitlabci_torrent/utils/gitlab_utils.py**](https://github.com/jacksonpradolima/gitlabci-torrent/blob/7b092ee662e5094bca682439657506b1ef0af3a0/gitlabci_torrent/utils/gitlab_utils.py#L13) and use the absolute path.
+
+
+
 #  Using the tool <img width="40" src="https://emojis.slackmojis.com/emojis/images/1609352144/11926/dianajoa.gif?1609352144" alt="Dianajoa" />
 
 ## 📌 Downloading the job logs (*Harvester*)
