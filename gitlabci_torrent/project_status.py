@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from sklearn.preprocessing import MinMaxScaler
 
 # set ggplot style
 plt.style.use('ggplot')
@@ -14,18 +15,27 @@ sns.set_style("whitegrid")
 mpl.rcParams.update({'font.size': 24})
 
 
-
 class ProjectStatus(object):
     def __init__(self, project_dir):
         self.project_dir = project_dir
         self.project = project_dir.split(os.sep)[-1]
+        self.scaler = MinMaxScaler()
 
     def update_project(self, project_dir):
         self.project_dir = project_dir
         self.project = project_dir.split(os.sep)[-1]
 
     def get_summary(self):
-        summary_cols = ["Name", "Period", "Builds", "Faults", "Tests",
+        def get_sparline(dataframe):
+            # Sparklines
+            scaled_values = self.scaler.fit_transform(dataframe)
+            sparklines = '\n'.join([f"\\sparkspike {i[0]} {i[1]}" for i in scaled_values])
+
+            return "\\begin{sparline}\n " + sparklines + "\n\\end{sparkline}"
+
+        summary_cols = ["Name", "Period", "Builds",
+                        "Faults", "FaultsByCycle",
+                        "Tests", "Volatility"                        
                         "Duration", "Interval"]
 
         summary = pd.DataFrame(columns=summary_cols)
@@ -71,9 +81,17 @@ class ProjectStatus(object):
         test_suite_min = tests['test_name'].min()
         test_suite_max = tests['test_name'].max()
 
+        # Sparklines
+        sparklines_faults = get_sparline(faults[['sha', 'verdict']])
+
+        volatility = df.groupby(['sha'], as_index=False).agg({'test_name': 'count'})
+        sparklines_volatility = get_sparline(volatility[['sha', 'test_name']])
+
         row = [self.project.split("@")[-1], mindate + "-" + maxdate, total_builds,
                f"{total_faults} ({faulty_builds})",
+               sparklines_faults,
                f"{test_max} ({test_suite_min} - {test_suite_max})",
+               sparklines_volatility,
                f"{round(np.mean(duration), 4)} ({round(np.std(duration), 3)})" if len(duration) > 0 else "-",
                f"{round(np.mean(diff_date), 4)} ({round(np.std(diff_date), 3)})" if len(diff_date) > 0 else "-"]
 
