@@ -9,9 +9,14 @@ from alive_progress import alive_bar
 from gitlabci_torrent.project_status import ProjectStatus
 from gitlabci_torrent.data_extraction import DataExtraction
 
-summary_cols = ["Name", "Period", "Builds",
-                "Faults", "Tests", "Duration", "Interval"]
+pd.set_option('display.max_colwidth', None)
+pd.set_option('display.max_columns', None)  
+pd.set_option('display.max_rows', None)
 
+summary_cols =  ["Name", "Period", "Builds",
+                 "Faults", "FaultsByCycle",
+                 "Tests", "Volatility",                        
+                 "Duration", "Interval"]
 
 def plot_project_status(project_stat: ProjectStatus, path):
     fig, ax = plt.subplots(figsize=(30, 20))
@@ -82,12 +87,34 @@ if __name__ == '__main__':
 
     df_simple = df[["Name", "Period", "Builds", "Faults", "Tests", "Duration", "Interval"]]
 
-    print(f"\n\nExporting Project Status to project_status_{args.project_name}.txt")
-    with open(f'project_status_{args.project_name}.txt', 'w') as tf:
+    print(f"\n\nExporting Project Status to {args.project_name}_project_status.txt")
+    with open(f'{args.project_name}_project_status.txt', 'w') as tf:
         tf.write(tabulate(df_simple, headers='keys', tablefmt='psql', showindex=False))
 
-    print(f"Exporting Project Status to project_status_table_{args.project_name}.tex")
-    df_simple.to_latex(f'project_status_table_{args.project_name}.tex', index=False)
+    print(f"Exporting Project Status to {args.project_name}_project_status_table.tex")
+    df_simple.to_latex(f'{args.project_name}_project_status_table.tex', index=False)
 
-    print(f"Exporting Project Status to project_status_table_complete_{args.project_name}.tex")
-    df.to_latex(f'project_status_table_complete_{args.project_name}.tex', index=False)
+    latex = df.to_latex(index=False)
+
+    # Remove special characters provided by pandas
+    latex = latex.replace("\\textbackslash ", "\\").replace(
+        "\$", "$").replace("\{", "{").replace("\}", "}")
+
+    # split lines into a list
+    latex_list = latex.splitlines()
+    caption = f"System Information - {args.project_name}"
+    
+    # Insert new LaTeX commands
+    latex_list.insert(0, '\\begin{table*}[!ht]')
+    latex_list.insert(1, f'\\caption{{{caption}}}')
+    latex_list.insert(2, '\\resizebox{\\linewidth}{!}{')
+    latex_list.append('}')
+    latex_list.append('\\end{table*}')
+
+    # join split lines to get the modified latex output string
+    latex_new = '\n'.join(latex_list)
+
+    # Save in a file
+    print(f"Exporting Project Status to {args.project_name}_project_status_table_complete.tex")
+    with open(f'{args.project_name}_project_status_table_complete.tex', 'w') as tf:
+        tf.write(latex_new)

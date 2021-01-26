@@ -28,14 +28,21 @@ class ProjectStatus(object):
     def get_summary(self):
         def get_sparline(dataframe):
             # Sparklines
-            scaled_values = self.scaler.fit_transform(dataframe)
-            sparklines = '\n'.join([f"\\sparkspike {i[0]} {i[1]}" for i in scaled_values])
+            sparklines = "\\sparkspike 0 0" # Workaround for variants without failures
+            if len(dataframe) > 1:
+                scaled_values = self.scaler.fit_transform(dataframe)
+                                
+                #sparklines = f'    '.join([f"\\sparkspike {i[0]} {i[1]}" for i in scaled_values])
+                sparklines = f'    '.join([f"{i[0]} {i[1]}" for i in scaled_values])
 
-            return "\\begin{sparline}\n " + sparklines + "\n\\end{sparkline}"
+                #return "\\begin{sparkline}{15} " + os.linesep + sparklines + os.linesep + " \\end{sparkline}"
+                return "\\begin{sparkline}{15} " + "\\spark " + sparklines + " / \\end{sparkline}"
+            
+            return ""
 
         summary_cols = ["Name", "Period", "Builds",
                         "Faults", "FaultsByCycle",
-                        "Tests", "Volatility"                        
+                        "Tests", "Volatility",                        
                         "Duration", "Interval"]
 
         summary = pd.DataFrame(columns=summary_cols)
@@ -82,10 +89,10 @@ class ProjectStatus(object):
         test_suite_max = tests['test_name'].max()
 
         # Sparklines
-        sparklines_faults = get_sparline(faults[['sha', 'verdict']])
+        sparklines_faults = get_sparline(faults[['sha', 'verdict']]) if total_faults > 0 else ""
 
-        volatility = df.groupby(['sha'], as_index=False).agg({'test_name': 'count'})
-        sparklines_volatility = get_sparline(volatility[['sha', 'test_name']])
+        #volatility = df.groupby(['sha'], as_index=False).agg({'test_name': 'count'})
+        sparklines_volatility = get_sparline(tests[['sha', 'test_name']])
 
         row = [self.project.split("@")[-1], mindate + "-" + maxdate, total_builds,
                f"{total_faults} ({faulty_builds})",
